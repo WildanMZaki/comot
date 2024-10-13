@@ -1,0 +1,19 @@
+Usage: 
+comot [-c] [-i|-v|-a|-e <extension>] <filename> [target]
+
+Another Usage Option:
+comot [-c] <filename> [target] [-i|-v|-a|-e <extension>]
+
+Alias: Default 'comot' word used for alias comot command, but you can customize it when do installation
+
+Options:
+  -c                Copy instead of move.
+  -i                Filter for image files (jpg, png, etc.).
+  -v                Filter for video files (mp4, avi, etc.).
+  -a                Filter for audio files (mp3, wav, etc.).
+  -e <extension>    Filter for a specific file extension (e.g., pdf, txt).
+
+Special Commands:
+  -v, --version     Display the current version of the tool.
+  -h, --help        Display this help message.
+  -a, --author      Display author information.
