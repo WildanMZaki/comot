@@ -1,3 +1,4 @@
 /target
 *.bak
 /runner.sh
+/testing

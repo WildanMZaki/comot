@@ -21,31 +21,31 @@ echo "Test files created!"
 
 # Test case 1: Move an exact file match
 echo "Test 1: Moving an exact file match"
-comot "comot-test/cat.png" "$TARGET_DIR/assets/images"
+./comot.sh "comot-test/cat.png" "$TARGET_DIR/assets/images"
 echo "----------------------------------"
 
 # Test case 2: Move all image files matching 'cat*'
 echo "Test 2: Moving all image files matching 'cat*'"
-comot -i "comot-test/cat*" -c "$TARGET_DIR/assets/images"
+./comot.sh -i "comot-test/cat*" -c "$TARGET_DIR/assets/images"
 echo "----------------------------------"
 
 # Test case 3: Move all video files matching 'vid*'
 echo "Test 3: Moving all video files matching 'vid*'"
-comot -v "comot-test/vid*" "$TARGET_DIR/assets/videos"
+./comot.sh -v "comot-test/vid*" "$TARGET_DIR/assets/videos"
 echo "----------------------------------"
 
 # Test case 4: Copy all audio files matching 'music*'
 echo "Test 4: Copying all audio files matching 'music*'"
-comot -c -a "comot-test/music*" "$TARGET_DIR/audios"
+./comot.sh -c -a "comot-test/music*" "$TARGET_DIR/audios"
 echo "----------------------------------"
 
 # Test case 5: Copy all PDF files matching 'report*'
 echo "Test 5: Copying all PDF files matching 'report*'"
-comot -c "comot-test/report*" "$TARGET_DIR/docs" -e pdf
+./comot.sh -c "comot-test/report*" "$TARGET_DIR/docs" -e pdf
 echo "----------------------------------"
 
 # Test case 6: Move files with a similar name (prompt selection)
 echo "Test 6: Prompt selection for files with similar names"
-comot "comot-test/cat" "$TARGET_DIR/assets/images"
+./comot.sh "comot-test/cat" "$TARGET_DIR/assets/images"
 echo "----------------------------------"
 

@@ -50,6 +50,39 @@ is_flag() {
     esac
 }
 
+# Parse arguments to handle flags flexibly
+args=()  # To collect positional arguments like filenames
+while [ "$#" -gt 0 ]; do
+    if is_flag "$1"; then
+        case "$1" in
+            -c)
+                COPY_MODE=true
+                ;;
+            -i)
+                FILE_TYPE="images"
+                ;;
+            -v)
+                FILE_TYPE="videos"
+                ;;
+            -a)
+                FILE_TYPE="audio"
+                ;;
+            -e)
+                shift
+                EXT_FILTER="$1"
+                FILE_TYPE="ext"
+                ;;
+        esac
+    else
+        args+=("$1")
+    fi
+    shift
+done
+
+# Extract the positional arguments from the collected 'args' array
+FILE_PATTERN="${args[0]}"
+TARGET_PATH="${args[1]}"
+
 # Function to search for files matching the pattern and optionally filter by type or extension
 search_files() {
     local pattern="$1"
@@ -84,8 +117,24 @@ select_file() {
     mapfile -t matches < <(search_files "*$pattern*" "$file_type" "$ext_filter")
     
     if [ ${#matches[@]} -eq 0 ]; then
-        echo "No matches found."
-        return 1
+        echo "No matches item found."
+        exit 1
+    fi
+
+    # Single match found, ask for confirmation
+    if [ ${#matches[@]} -eq 1 ]; then
+        local single_file="${matches[0]#$DOWNLOADS_DIR/}"  # Strip the Downloads path prefix for display
+
+        # Ask user to confirm the file
+        echo "Is this the file you want '$single_file'? (Y/n): "
+        read -p '> ' -r confirm
+        if [[ "$confirm" =~ ^[Yy]$ || -z "$confirm" ]]; then
+            FULL_PATH="${matches[0]}"
+            return 0
+        else
+            echo "Selection canceled."
+            exit 1
+        fi
     fi
 
     # Create a relative paths list to display only the path after "Downloads/"
@@ -108,39 +157,6 @@ select_file() {
 
     return 1
 }
-
-# Parse arguments to handle flags flexibly
-args=()  # To collect positional arguments like filenames
-while [ "$#" -gt 0 ]; do
-    if is_flag "$1"; then
-        case "$1" in
-            -c)
-                COPY_MODE=true
-                ;;
-            -i)
-                FILE_TYPE="images"
-                ;;
-            -v)
-                FILE_TYPE="videos"
-                ;;
-            -a)
-                FILE_TYPE="audio"
-                ;;
-            -e)
-                shift
-                EXT_FILTER="$1"
-                FILE_TYPE="ext"
-                ;;
-        esac
-    else
-        args+=("$1")
-    fi
-    shift
-done
-
-# Extract the positional arguments from the collected 'args' array
-FILE_PATTERN="${args[0]}"
-TARGET_PATH="${args[1]}"
 
 # Ensure a filename or pattern is provided
 if [ -z "$FILE_PATTERN" ]; then
