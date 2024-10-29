@@ -1,0 +1,29 @@
+[I]
+- Currently if move file to /testing/thisisdirectory.withext (has '.')/test
+    result would give me test file without extension
+    : resolve: must detect the extension must in the latest / part
+
+[F]
+- Move or copy all directory if search_pattern is really match the directory name
+
+[F]
+- Renaming when copy or move to pattern, i mean like when difined renamed to cat then all files renamed to: cat-1.ext, cat-2.ext, ...
+
+[F]
+- Add -o feature for latest command: meaning order to specify which files order from latest to be moved or copied
+
+[I]
+- Flag -l still not included to wildcard pattern, which is actually can be implemented
+
+[I]
+- Renaming with pattern for wildcard pattern, if specified filename, i think it would gonna be only one file:
+    resolve: 
+    Add pattern renaming feature cat-1.png, cat-2.png ....
+
+[F]
+- Move and copy specified for directory with rules:
+: if found exact dir name in source dir, then just comot whole dir
+: if not found, but specify flag -d, then just do searching and selection like the files
+
+[F]
+scan command: handle autonomous target directory like scanning working directory and if found images or pictures directory make it as default target comot images

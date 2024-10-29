@@ -42,10 +42,14 @@ COPY_MODE=false
 FILE_TYPE="all"
 EXT_FILTER=""
 
+#special for latest command
+NUM_FILES=1
+LIST_ONLY=false
+
 # Function to check if the argument is a flag
 is_flag() {
     case "$1" in
-        -c|-i|-v|-a|-e) return 0 ;;
+        -c|-i|-v|-a|-e|-l|-n) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -57,6 +61,13 @@ while [ "$#" -gt 0 ]; do
         case "$1" in
             -c)
                 COPY_MODE=true
+                ;;
+            -n)
+                shift
+                NUM_FILES="$1"
+                ;;
+            -l)
+                LIST_ONLY=true
                 ;;
             -i)
                 FILE_TYPE="images"
@@ -91,19 +102,19 @@ search_files() {
 
     case "$file_type" in
         images)
-            find "$DOWNLOADS_DIR" -type f -iname "$pattern" \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.webp" \)
+            find "$DOWNLOADS_DIR" -type f -iname "$pattern" \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.webp" \) -printf "%T@ %p\n" | sort -rn | cut -d' ' -f2-
             ;;
         videos)
-            find "$DOWNLOADS_DIR" -type f -iname "$pattern" \( -iname "*.mp4" -o -iname "*.avi" -o -iname "*.mov" -o -iname "*.mkv" -o -iname "*.flv" -o -iname "*.webm" \)
+            find "$DOWNLOADS_DIR" -type f -iname "$pattern" \( -iname "*.mp4" -o -iname "*.avi" -o -iname "*.mov" -o -iname "*.mkv" -o -iname "*.flv" -o -iname "*.webm" \) -printf "%T@ %p\n" | sort -rn | cut -d' ' -f2-
             ;;
         audio)
-            find "$DOWNLOADS_DIR" -type f -iname "$pattern" \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.ogg" -o -iname "*.flac" -o -iname "*.m4a" \)
+            find "$DOWNLOADS_DIR" -type f -iname "$pattern" \( -iname "*.mp3" -o -iname "*.wav" -o -iname "*.ogg" -o -iname "*.flac" -o -iname "*.m4a" \) -printf "%T@ %p\n" | sort -rn | cut -d' ' -f2-
             ;;
         ext)
-            find "$DOWNLOADS_DIR" -type f -iname "$pattern" -iname "*.$ext_filter"
+            find "$DOWNLOADS_DIR" -type f -iname "$pattern" -iname "*.$ext_filter" -printf "%T@ %p\n" | sort -rn | cut -d' ' -f2-
             ;;
         *)
-            find "$DOWNLOADS_DIR" -type f -iname "$pattern"
+            find "$DOWNLOADS_DIR" -type f -iname "$pattern" -printf "%T@ %p\n" | sort -rn | cut -d' ' -f2-
             ;;
     esac
 }
@@ -163,41 +174,61 @@ if [ -z "$FILE_PATTERN" ]; then
     echo "Usage: $0 [-c] [-i|-v|-a|-e <extension>] <filename> [target]"
     exit 1
 fi
+ 
+# Special keyword: latest, get the latest one
+if [[ "$FILE_PATTERN" == "latest" ]]; then
+    search_pattern="*"
+    mapfile -t matched_files < <(search_files "$search_pattern" "$FILE_TYPE" "$EXT_FILTER" | head -n "$NUM_FILES")
 
-# Split FILE_PATTERN if it contains '/'
-if [[ "$FILE_PATTERN" == */* ]]; then
-    IFS='/' read -r -a path_array <<< "$FILE_PATTERN"
-    FILE_PATTERN="${path_array[-1]}"  # Last element (the filename)
-    
-    # Concatenate the directory path with DOWNLOADS_DIR
-    for ((i=0; i < ${#path_array[@]}-1; i++)); do
-        DOWNLOADS_DIR="$DOWNLOADS_DIR/${path_array[i]}"
-    done
-fi
+    if [ ${#matched_files[@]} -eq 0 ]; then
+        echo "No matching recent files found."
+        exit 1
+    fi
 
-# Full path of the file in Downloads directory
-FULL_PATH="$DOWNLOADS_DIR/$FILE_PATTERN"
-
-# Check if the exact file exists
-if [ -f "$FULL_PATH" ]; then
-    matched_files=("$FULL_PATH")
+    # If listing option is specified, display the files and exit
+    if [ "$LIST_ONLY" = true ]; then
+        echo "Latest $NUM_FILES file(s):"
+        for file in "${matched_files[@]}"; do
+            echo "${file#$DOWNLOADS_DIR/}"  # Display relative path
+        done
+        exit 0
+    fi
 else
-    # If wildcard is used, get all matching files
-    if [[ "$FILE_PATTERN" == *"*"* ]]; then
-        mapfile -t matched_files < <(search_files "$FILE_PATTERN" "$FILE_TYPE" "$EXT_FILTER")
+    # Split FILE_PATTERN if it contains '/'
+    if [[ "$FILE_PATTERN" == */* ]]; then
+        IFS='/' read -r -a path_array <<< "$FILE_PATTERN"
+        FILE_PATTERN="${path_array[-1]}"  # Last element (the filename)
+        
+        # Concatenate the directory path with DOWNLOADS_DIR
+        for ((i=0; i < ${#path_array[@]}-1; i++)); do
+            DOWNLOADS_DIR="$DOWNLOADS_DIR/${path_array[i]}"
+        done
+    fi
 
-        if [ ${#matched_files[@]} -eq 0 ]; then
-            echo "No files found matching the pattern '$FILE_PATTERN' with the filter '$FILE_TYPE'."
-            exit 1
-        fi
-    else
-        # No wildcard: prompt user to select a file if none is exactly found
-        select_file "$FILE_PATTERN" "$FILE_TYPE" "$EXT_FILTER"
-        if [ $? -ne 0 ]; then
-            echo "File not found."
-            exit 1
-        fi
+    # Full path of the file in Downloads directory
+    FULL_PATH="$DOWNLOADS_DIR/$FILE_PATTERN"
+
+    # Check if the exact file exists
+    if [ -f "$FULL_PATH" ]; then
         matched_files=("$FULL_PATH")
+    else
+        # If wildcard is used, get all matching files
+        if [[ "$FILE_PATTERN" == *"*"* ]]; then
+            mapfile -t matched_files < <(search_files "$FILE_PATTERN" "$FILE_TYPE" "$EXT_FILTER")
+
+            if [ ${#matched_files[@]} -eq 0 ]; then
+                echo "No files found matching the pattern '$FILE_PATTERN' with the filter '$FILE_TYPE'."
+                exit 1
+            fi
+        else
+            # No wildcard: prompt user to select a file if none is exactly found
+            select_file "$FILE_PATTERN" "$FILE_TYPE" "$EXT_FILTER"
+            if [ $? -ne 0 ]; then
+                echo "File not found."
+                exit 1
+            fi
+            matched_files=("$FULL_PATH")
+        fi
     fi
 fi
 
@@ -222,9 +253,9 @@ for FULL_PATH in "${matched_files[@]}"; do
     # Perform the move or copy operation
     if [ "$COPY_MODE" = true ]; then
         cp "$FULL_PATH" "$FINAL_TARGET"
-        echo "Copied $(basename "$FULL_PATH") to $FINAL_TARGET"
+        echo "Copied $(basename "$FULL_PATH") to ./${FINAL_TARGET#$TARGET_DIR/}"
     else
         mv "$FULL_PATH" "$FINAL_TARGET"
-        echo "Moved $(basename "$FULL_PATH") to $FINAL_TARGET"
+        echo "Moved $(basename "$FULL_PATH") to ./${FINAL_TARGET#$TARGET_DIR/}"
     fi
 done
